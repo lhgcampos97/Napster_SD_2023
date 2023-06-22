@@ -1,11 +1,13 @@
 package napster.client;
 
+import java.io.File;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import napster.server.ClientInfo;
 import napster.server.RemoteServerInterface;
 
 public class RemoteClient {
@@ -52,7 +54,7 @@ public class RemoteClient {
                 switch (option) {
                     case 1:
                  
-                        boolean joined = server.join(client.ip);
+                    	boolean joined = server.join(client.ip, client.port, client.fileNames);
 
                         if (joined) {
                             System.out.println("Cliente conectado com sucesso. \n");
@@ -61,12 +63,21 @@ public class RemoteClient {
                         }
                         break;
                     case 2:
-                        List<String> clientList = server.search();
-                        System.out.println("Clientes conectados:");
-                        for (String clientIP : clientList) {
-                            System.out.println(clientIP);
+                        System.out.print("Digite o nome do arquivo a ser pesquisado: ");
+                        String fileName = scanner.nextLine();
+
+                        List<ClientInfo> clientsWithFile = server.search(fileName);
+
+                        if (clientsWithFile.isEmpty()) {
+                            System.out.println("Nenhum cliente possui o arquivo.");
+                        } else {
+                            System.out.println("Clientes que possuem o arquivo " + fileName + ":");
+                            for (ClientInfo clientInfo : clientsWithFile) {
+                                System.out.println("IP: " + clientInfo.getIp() + ", Porta: " + clientInfo.getPort());
+                            }
                         }
                         break;
+
                     case 0:
                         exit = true;
                         break;
@@ -95,15 +106,29 @@ public class RemoteClient {
         String portInput = scanner.nextLine().trim();
         int port;
         if (portInput.isEmpty()) {
-        	port = 1099;
+            port = 1099;
         } else {
-        	port = Integer.parseInt(portInput);
+            port = Integer.parseInt(portInput);
         }
 
         System.out.print("Insira a pasta: ");
         String folderName = scanner.nextLine().trim();
 
-        return new RemoteClient(ip, port, folderName, new ArrayList<>());
+        // Identificar arquivos na pasta indicada
+        File folder = new File(folderName);
+        File[] files = folder.listFiles();
+
+        List<String> fileNames = new ArrayList<>();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile()) {
+                    fileNames.add(file.getName());
+                    System.out.println(file.getName());
+                }
+            }
+        }
+
+        return new RemoteClient(ip, port, folderName, fileNames);
     }
 }
 

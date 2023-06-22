@@ -8,27 +8,41 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RemoteServer implements RemoteServerInterface {
-	private List<String> clientIPs;
+	private List<ClientInfo> clientIPs;
 
     public RemoteServer() {
         clientIPs = new ArrayList<>();
     }
 
-    public boolean join(String ipAddress) throws RemoteException {
-        System.out.println("Nova requisição de cliente: " + ipAddress);
-        if (!clientIPs.contains(ipAddress)) {
-            System.out.println("Cliente conectado: " + ipAddress);
-            clientIPs.add(ipAddress);
-            return true;
-        } else {
-            System.out.println("Cliente já conectado: " + ipAddress);
-            return false;
+    public boolean join(String ipAddress, int port, List<String> fileNames) throws RemoteException {
+        String clientAddress = ipAddress + ":" + port;
+
+        for (ClientInfo clientInfo : clientIPs) {
+            if (clientInfo.getIp().equals(ipAddress) && clientInfo.getPort() == port) {
+                System.out.println("Cliente já conectado: " + clientAddress);
+                return false;
+            }
         }
+
+        ClientInfo newClient = new ClientInfo(ipAddress, port, fileNames);
+        clientIPs.add(newClient);
+
+        System.out.println("Cliente conectado: " + clientAddress);
+        return true;
     }
 
-    public List<String> search() throws RemoteException {
-        return clientIPs;
+    public List<ClientInfo> search(String fileName) throws RemoteException {
+        List<ClientInfo> clientsWithFile = new ArrayList<>();
+
+        for (ClientInfo client : clientIPs) {
+            if (client.getFileNames().contains(fileName)) {
+                clientsWithFile.add(client);
+            }
+        }
+
+        return clientsWithFile;
     }
+
 
     public static void main(String[] args) {
         try {
