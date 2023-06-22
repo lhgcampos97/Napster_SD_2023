@@ -32,7 +32,7 @@ public class RemoteClient {
         	RemoteClient client = createClient();
         	
             // Obtenha a referência para o registro RMI
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            Registry registry = LocateRegistry.getRegistry("localhost", client.port);
 
             // Obtenha o objeto remoto do servidor pelo nome
             RemoteServerInterface server = (RemoteServerInterface) registry.lookup("RemoteServer");
