@@ -4,25 +4,30 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Hashtable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RemoteServer implements RemoteServerInterface {
-    private Hashtable<String, String> clientIPs;
+	private List<String> clientIPs;
 
     public RemoteServer() {
-        clientIPs = new Hashtable<>();
+        clientIPs = new ArrayList<>();
     }
 
     public boolean join(String ipAddress) throws RemoteException {
         System.out.println("Nova requisição de cliente: " + ipAddress);
-        if (!clientIPs.containsKey(ipAddress)) {
+        if (!clientIPs.contains(ipAddress)) {
             System.out.println("Cliente conectado: " + ipAddress);
-            clientIPs.put(ipAddress, ipAddress);
+            clientIPs.add(ipAddress);
             return true;
         } else {
             System.out.println("Cliente já conectado: " + ipAddress);
             return false;
         }
+    }
+
+    public List<String> search() throws RemoteException {
+        return clientIPs;
     }
 
     public static void main(String[] args) {
