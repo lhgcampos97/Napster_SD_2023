@@ -14,17 +14,12 @@ public class RemoteClient {
 	
     private String ip;
 	private int port;
-	private String folderName;
 	private List<String> fileNames;
-	private String peerAdress;
-
-
+	
 	public RemoteClient(String ip, int port, String folderName, List<String> fileNames) {
         this.ip = ip;
         this.port = port;
-        this.folderName = folderName;
         this.fileNames = fileNames;
-        this.peerAdress = ip + ":" + port;
     }
 
     
@@ -34,7 +29,7 @@ public class RemoteClient {
         	RemoteClient client = createClient();
         	
             // Obtenha a referência para o registro RMI
-            Registry registry = LocateRegistry.getRegistry("localhost", client.port);
+            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
 
             // Obtenha o objeto remoto do servidor pelo nome
             RemoteServerInterface server = (RemoteServerInterface) registry.lookup("RemoteServer");
