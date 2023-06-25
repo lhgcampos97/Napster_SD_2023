@@ -39,9 +39,6 @@ public class RemoteClient {
 			boolean exit = false;
 			boolean joined = false;
 
-			// Crie o ServerSocket para receber solicitações de download
-			ServerSocket fileServerSocket = new ServerSocket(client.port);
-
 			while (!exit) {
 				System.out.println("\nMenu:");
 				System.out.println("1. JOIN");
@@ -57,12 +54,17 @@ public class RemoteClient {
 					joined = server.join(client.ip, client.port, client.fileNames);
 
 					if (joined) {
+						// Crie o ServerSocket para receber solicitações de download
+						ServerSocket fileServerSocket = new ServerSocket(client.port);
 						System.out.println("JOIN_OK"); 
 
 						// Aguardar solicitação de download 
 						handleFileRequest(fileServerSocket,client);
 						break;
 
+					} else {
+						System.out.println("Cliente já conectado");
+						break;
 					}
 
 				case 2:
@@ -102,9 +104,9 @@ public class RemoteClient {
 						break;
 					}
 
-					
+
 					requestFile(ipDownload,Integer.parseInt(portDownload), fileNameDownload, client.folderName);
-					
+
 					break;
 				case 0:
 					exit = true;
@@ -115,8 +117,9 @@ public class RemoteClient {
 				}
 			}
 
+			//fileServerSocket.close();
 			scanner.close();
-			fileServerSocket.close();
+
 		} catch (Exception e) {
 			System.err.println("Erro no cliente: " + e.toString());
 			e.printStackTrace();
@@ -162,16 +165,16 @@ public class RemoteClient {
 
 	private static void requestFile(String ip, int port, String fileName, String folderName) {
 		Thread requestThread = new Thread(() -> {			
-			
+
 			try (Socket socket = new Socket(ip, port)) {
-			
+
 				OutputStream os = socket.getOutputStream();
 				DataOutputStream writer = new DataOutputStream(os);
 				writer.writeBytes(fileName+"\n");
-				
+
 				InputStream is = socket.getInputStream();
 				DataInputStream dis = new DataInputStream(is);
-				
+
 				long fileSize = dis.readLong();
 				System.out.println(fileSize);
 				if (fileSize > 0) {
@@ -206,57 +209,61 @@ public class RemoteClient {
 
 	private static void handleFileRequest(ServerSocket fileServerSocket, RemoteClient client) {
 		Thread handleThread = new Thread(() -> {
-			try {
-				Socket socket = fileServerSocket.accept();
-				System.out.println("Clientes conectados com sucesso.");
-				
-				System.out.println("Criando o reader");
-				InputStream is = socket.getInputStream();
-				BufferedReader br = new BufferedReader(new InputStreamReader(is));
-				
-				System.out.println("Lendo o nome do arquivo");
-				// Receber o nome do arquivo solicitado
-				String fileName = br.readLine();
-				System.out.println("Solicitação de download recebida para o arquivo: " + fileName);
+			while(true) {
+				try {
+					Socket socket = fileServerSocket.accept();
+					System.out.println("Clientes conectados com sucesso.");
 
-				OutputStream os = socket.getOutputStream();
-				DataOutputStream dos = new DataOutputStream(os);
+					System.out.println("Criando o reader");
+					InputStream is = socket.getInputStream();
+					BufferedReader br = new BufferedReader(new InputStreamReader(is));
 
-				// Verificar se o arquivo existe
-				File fileToSend = new File(client.folderName + File.separator + fileName);
-				System.out.println(fileToSend);
-				if (fileToSend.exists()) {
-					System.out.println("Iniciar envio");
-					long fileSize = fileToSend.length();
+					System.out.println("Lendo o nome do arquivo");
+					// Receber o nome do arquivo solicitado
+					String fileName = br.readLine();
+					System.out.println("Solicitação de download recebida para o arquivo: " + fileName);
 
-					// Enviar tamanho do arquivo
-					dos.writeLong(fileSize);
+					OutputStream os = socket.getOutputStream();
+					DataOutputStream dos = new DataOutputStream(os);
 
-					// Enviar o arquivo em blocos de 4096 bytes
-					FileInputStream fis = new FileInputStream(fileToSend);
-					byte[] buffer = new byte[4096];
-					int bytesRead;
-					while ((bytesRead = fis.read(buffer)) != -1) {
-						dos.write(buffer, 0, bytesRead);
+					// Verificar se o arquivo existe
+					File fileToSend = new File(client.folderName + File.separator + fileName);
+					System.out.println(fileToSend);
+					if (fileToSend.exists()) {
+						System.out.println("Iniciar envio");
+						long fileSize = fileToSend.length();
+
+						// Enviar tamanho do arquivo
+						dos.writeLong(fileSize);
+
+						// Enviar o arquivo em blocos de 4096 bytes
+						FileInputStream fis = new FileInputStream(fileToSend);
+						byte[] buffer = new byte[4096];
+						int bytesRead;
+						while ((bytesRead = fis.read(buffer)) != -1) {
+							dos.write(buffer, 0, bytesRead);
+						}
+						fis.close();
+						socket.close();
+						System.out.println("Arquivo enviado com sucesso.");
+					} else {
+						// Se o arquivo não existe, enviar tamanho 0
+						dos.writeLong(0);
+						System.out.println("O arquivo não existe ou não está disponível para download.");
 					}
-					fis.close();
 
-					System.out.println("Arquivo enviado com sucesso.");
-				} else {
-					// Se o arquivo não existe, enviar tamanho 0
-					dos.writeLong(0);
-					System.out.println("O arquivo não existe ou não está disponível para download.");
+					br.close();
+					dos.close();
+					//fileServerSocket.close();
+
+				} catch (IOException e) {
+					System.out.println("Erro ao lidar com a solicitação de arquivo: " + e.getMessage());
 				}
-
-				br.close();
-				dos.close();
-			} catch (IOException e) {
-				System.out.println("Erro ao lidar com a solicitação de arquivo: " + e.getMessage());
 			}
 		});
 
 		handleThread.start();
-		
+
 	}
 
 }
