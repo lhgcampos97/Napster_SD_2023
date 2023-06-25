@@ -59,12 +59,8 @@ public class RemoteClient {
 					if (joined) {
 						System.out.println("JOIN_OK"); 
 
-						// Aguardar solicitação de download
-						
-						Socket fileSendSocket = fileServerSocket.accept();
-						System.out.println("Clientes conectados com sucesso."); 
-						handleFileRequest(fileSendSocket,client);
-						joined = false;
+						// Aguardar solicitação de download 
+						handleFileRequest(fileServerSocket,client);
 						break;
 
 					}
@@ -208,9 +204,12 @@ public class RemoteClient {
 
 
 
-	private static void handleFileRequest(Socket socket, RemoteClient client) {
+	private static void handleFileRequest(ServerSocket fileServerSocket, RemoteClient client) {
 		Thread handleThread = new Thread(() -> {
 			try {
+				Socket socket = fileServerSocket.accept();
+				System.out.println("Clientes conectados com sucesso.");
+				
 				System.out.println("Criando o reader");
 				InputStream is = socket.getInputStream();
 				BufferedReader br = new BufferedReader(new InputStreamReader(is));
